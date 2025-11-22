@@ -10,6 +10,7 @@
 #include "interrupts_101299202_101294988.hpp"
 #define TIME_QUANTUM 100
 
+
 void FCFS(std::vector<PCB> &ready_queue) {
     std::sort( 
                 ready_queue.begin(),
@@ -31,6 +32,8 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                                     //to make the code easier :).
 
     unsigned int current_time = 0;
+    unsigned int quantum_remaining = TIME_QUANTUM;
+    unsigned int cpu_time_since_last_io = 0;
     PCB running;
 
     //Initialize an empty running process
@@ -74,11 +77,25 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
         ///////////////////////MANAGE WAIT QUEUE/////////////////////////
         //This mainly involves keeping track of how long a process must remain in the ready queue
-
+         for (auto iter = wait_queue.begin(); iter != wait_queue.end();) {
+            iter->io_time_left--;
+            if (iter->io_time_left == 0) {
+                iter->state = READY;
+                ready_queue.push_back(*iter);
+                sync_queue(job_list, *iter);
+                
+                execution_status += print_exec_status(current_time, iter->PID, WAITING, READY);
+                iter = wait_queue.erase(iter);
+            }
+            else {
+                ++iter;
+            }
+        }
         /////////////////////////////////////////////////////////////////
 
         //////////////////////////SCHEDULER//////////////////////////////
-        FCFS(ready_queue); //example of FCFS is shown here
+        
+
         /////////////////////////////////////////////////////////////////
 
     }
