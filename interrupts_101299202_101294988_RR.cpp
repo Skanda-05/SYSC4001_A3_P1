@@ -7,7 +7,8 @@
  * 
  */
 
-#include<interrupts_101299202_101294988.hpp>
+#include "interrupts_101299202_101294988.hpp"
+#define TIME_QUANTUM 100
 
 void FCFS(std::vector<PCB> &ready_queue) {
     std::sort( 
@@ -18,6 +19,7 @@ void FCFS(std::vector<PCB> &ready_queue) {
                 } 
             );
 }
+
 
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
 
@@ -53,13 +55,20 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         for(auto &process : list_processes) {
             if(process.arrival_time == current_time) {//check if the AT = current time
                 //if so, assign memory and put the process into the ready queue
-                assign_memory(process);
+                if (assign_memory(process)) {
 
-                process.state = READY;  //Set the process state to READY
-                ready_queue.push_back(process); //Add the process to the ready queue
-                job_list.push_back(process); //Add it to the list of processes
+                    process.state = READY;  //Set the process state to READY
+                    ready_queue.push_back(process); //Add the process to the ready queue
+                    job_list.push_back(process); //Add it to the list of processes
 
-                execution_status += print_exec_status(current_time, process.PID, NEW, READY);
+                    execution_status += print_exec_status(current_time, process.PID, NEW, READY);
+                }
+                else {
+                    process.state = NEW; // process remains in NEW
+                    job_list.push_back(process); // will need to check again later. add it to job list again for nwo
+                    std::cout << "Process " << process.PID << " could not be assigned memory at time " << current_time << std::endl;
+                    
+                }
             }
         }
 
