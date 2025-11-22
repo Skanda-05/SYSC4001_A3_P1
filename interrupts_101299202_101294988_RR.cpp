@@ -94,11 +94,72 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         /////////////////////////////////////////////////////////////////
 
         //////////////////////////SCHEDULER//////////////////////////////
-        
+        //Checking for running process
+        if (running.state == RUNNING){
+            running.remaining_time--;
+            quantum_remaining--;
+            cpu_time_since_last_io++;
+
+            //check if the process completed
+            if (running.remaining_time == 0){
+                execution_status += print_exec_status(current_time, running.PID, running.state, TERMINATED);
+                terminate_process(running, job_list);
+                idle_CPU(running);
+                quantum_remaining = TIME_QUANTUM;
+                cpu_time_since_last_io = 0;
+            }
+        }
+
+        //check if the process needs to do I/O
+        else if(running.io_freq > 0 && cpu_time_since_last_io >= running.io_freq) {
+            // move to wait queue
+            running.state = WAITING;
+            running.io_time_left = running.io_duration;
+            wait_queue.push_back(running);
+            sync_queue(job_list, running);
+
+            execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
+            idle_CPU(running);
+            quantum_remaining = TIME_QUANTUM;
+            cpu_time_since_last_io = 0;
+        }
+
+        // check if the time queue expired (RR will preempt)
+        else if (quantum_remaining == 0){
+            running.state = READY;
+            ready_queue.insert(ready_queue.begin(), running);
+            sync_queue(job_list, running);
+
+            execution_status += print_exec_status(current_time, running.PID, RUNNING, READY);
+            idle_CPU(running);
+            cpu_time_since_last_io = 0;
+        }
 
         /////////////////////////////////////////////////////////////////
 
-    }
+        //sSchedule a new process if CPU is idle
+        if(running.state != RUNNING && !ready_queue.empty()) {
+            running = ready_queue.back();
+            ready_queue.pop_back();
+
+            // only if the process is starting for the first time will the start time be set to the current time
+            // otherwise it retains its original start time
+            // This is to prevent overwriting the start time when a process is preempted and rescheduled
+            // run_process() function sets start time to current time unconditionally, meaning every time a process is scheduled
+            // its start time would be updated (even if it is just being rescheduled after preemption), which is incorrect.
+            if (running.start_time == -1) {
+                running.start_time = current_time;
+            }
+
+            states old_state = running.state;
+            running.state = RUNNING;
+            quantum_remaining = TIME_QUANTUM;
+            sync_queue(job_list, running);
+            execution_status += print_exec_status(current_time, running.PID, old_state, running.state);
+        }
+        
+        current_time++;
+    }   
     
     //Close the output table
     execution_status += print_exec_footer();
@@ -141,7 +202,7 @@ int main(int argc, char** argv) {
     //With the list of processes, run the simulation
     auto [exec] = run_simulation(list_process);
 
-    write_output(exec, "execution.txt");
+    write_output(exec, "execution_RR");
 
     return 0;
 }
