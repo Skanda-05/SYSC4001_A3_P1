@@ -108,32 +108,34 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                 quantum_remaining = TIME_QUANTUM;
                 cpu_time_since_last_io = 0;
             }
+            
+            //check if the process needs to do I/O
+            else if(running.io_freq > 0 && cpu_time_since_last_io >= running.io_freq) {
+                // move to wait queue
+                running.state = WAITING;
+                running.io_time_left = running.io_duration;
+                wait_queue.push_back(running);
+                sync_queue(job_list, running);
+
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
+                idle_CPU(running);
+                quantum_remaining = TIME_QUANTUM;
+                cpu_time_since_last_io = 0;
+            }
+
+            // check if the time queue expired (RR will preempt)
+            else if (quantum_remaining == 0){
+                running.state = READY;
+                ready_queue.insert(ready_queue.begin(), running);
+                sync_queue(job_list, running);
+
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, READY);
+                idle_CPU(running);
+                cpu_time_since_last_io = 0;
+            }
         }
 
-        //check if the process needs to do I/O
-        else if(running.io_freq > 0 && cpu_time_since_last_io >= running.io_freq) {
-            // move to wait queue
-            running.state = WAITING;
-            running.io_time_left = running.io_duration;
-            wait_queue.push_back(running);
-            sync_queue(job_list, running);
-
-            execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
-            idle_CPU(running);
-            quantum_remaining = TIME_QUANTUM;
-            cpu_time_since_last_io = 0;
-        }
-
-        // check if the time queue expired (RR will preempt)
-        else if (quantum_remaining == 0){
-            running.state = READY;
-            ready_queue.insert(ready_queue.begin(), running);
-            sync_queue(job_list, running);
-
-            execution_status += print_exec_status(current_time, running.PID, RUNNING, READY);
-            idle_CPU(running);
-            cpu_time_since_last_io = 0;
-        }
+        
 
         /////////////////////////////////////////////////////////////////
 
