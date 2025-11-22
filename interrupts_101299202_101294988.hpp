@@ -1,6 +1,8 @@
 /**
  * @file interrupts.hpp
  * @author Sasisekhar Govind
+ * @author Skanda Nagendra 101299202
+ * @author Aaron Fisher 101294988
  * @brief template main.cpp file for Assignment 3 Part 1 of SYSC4001
  * 
  */
