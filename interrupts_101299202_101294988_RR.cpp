@@ -227,7 +227,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
     throughput = throughput*1000; //change to proecess/second
    
     std::cout << "\n=== METRICS ===" << std::endl;
-    std::cout << "Throughput: " << throughput << " processes/ms" << std::endl;
+    std::cout << "Throughput: " << throughput << " processes/sec" << std::endl;
     std::cout << "Avg Turnaround Time: " << avg_turnaround_time << " ms" << std::endl;
     std::cout << "Avg Wait Time: " << avg_waiting_time << " ms" << std::endl;
     std::cout << "Avg Response Time: " << avg_response_time << " ms" << std::endl;
