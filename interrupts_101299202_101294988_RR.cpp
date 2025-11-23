@@ -211,17 +211,17 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
     for (auto tt : turnaround_times) {
         avg_turnaround_time += tt;
     }
-    avg_turnaround_time = avg_turnaround_time / turnaround_times.size(); // add all the turnaround times and divide by number of processes
+    avg_turnaround_time = avg_turnaround_time / turnaround_times.size(); 
 
     for (auto wt : waiting_times) {
         avg_waiting_time += wt;
     }
-    avg_waiting_time = avg_waiting_time / waiting_times.size(); // add all the waiting times and divide by number of processes
+    avg_waiting_time = avg_waiting_time / waiting_times.size();
 
     for (auto rt : response_times) {
         avg_response_time += rt;
     }
-    avg_response_time = avg_response_time / response_times.size(); // add all the response times and divide by number of processes
+    avg_response_time = avg_response_time / response_times.size(); 
 
     throughput = (float) turnaround_times.size() / (float) current_time; // total number of processes / total time taken. could also use job_list.size() i think
    
