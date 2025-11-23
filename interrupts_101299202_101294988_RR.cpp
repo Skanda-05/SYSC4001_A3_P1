@@ -181,7 +181,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
             //if this is the first time the process is running, record the response time
             if (first_run_time.find(running.PID) == first_run_time.end()) {
-                first_run_time[running.PID] = current_time;
+                first_run_time[running.PID] = running.start_time;
                 response_times.push_back(current_time - running.arrival_time); // RT = first run time - arrival time
             }
 
