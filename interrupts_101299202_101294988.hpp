@@ -274,6 +274,12 @@ PCB add_process(std::vector<std::string> tokens) {
     process.partition_number = -1;
     process.state = NOT_ASSIGNED;
     process.io_time_left = 0;
+    //Add priority field if EP/EP+RR scheduling is being tested - they take 7 fields
+    if (tokens.size() > 6) {
+       process.priority = std::stoi(tokens[6]);
+   } else { // if RR is being tested (RR only takes 6 fields), all processes are priority 0 by default
+       process.priority = 0;
+   }
 
     return process;
 }
