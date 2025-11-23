@@ -121,6 +121,27 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             
         }
         /////////////////////////////////////////////////////////////////
+        //Schedule a new process if CPU is idle
+        if (running.state != RUNNING && !ready_queue.empty()) {
+            //Sort the ready queue based on priority before scheduling
+            priority_sort(ready_queue);
+
+            running = ready_queue.back();
+            ready_queue.pop_back();
+            
+            // this if statement is most applicable for RR implemnation, but does not affect EP scheduling, 
+            // so just leaving here for consistency
+            if (running.start_time == -1) {
+                running.start_time = current_time;
+            }
+
+            states old_state = running.state;
+            running.state = RUNNING;
+            sync_queue(job_list, running);
+            execution_status += print_exec_status(current_time, running.PID, old_state, running.state);
+        }
+
+        current_time++;
     }
     //Close the output table
     execution_status += print_exec_footer();
@@ -163,7 +184,7 @@ int main(int argc, char** argv) {
     //With the list of processes, run the simulation
     auto [exec] = run_simulation(list_process);
 
-    write_output(exec, "execution_EP");
+    write_output(exec, "execution_EP.txt");
 
     return 0;
 }
