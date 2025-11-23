@@ -68,6 +68,7 @@ struct PCB{
     unsigned int    io_freq;
     unsigned int    io_duration;
     unsigned int    io_time_left;
+    unsigned int    priority;
 };
 
 //------------------------------------HELPER FUNCTIONS FOR THE SIMULATOR------------------------------

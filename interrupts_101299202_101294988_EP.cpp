@@ -7,17 +7,19 @@
  * 
  */
 
-#include<interrupts_101299202_101294988.hpp>
+#include "interrupts_101299202_101294988.hpp"
 
-void FCFS(std::vector<PCB> &ready_queue) {
+//Sorting the queue based on prioritiy.
+//Looks a lot like FCFS, but order is determined by priority value instead of arrival time. 
+void priority_sort(std::vector<PCB> &ready_queue) {
     std::sort( 
                 ready_queue.begin(),
                 ready_queue.end(),
                 []( const PCB &first, const PCB &second ){
-                    return (first.arrival_time > second.arrival_time); 
+                    return (first.priority > second.priority); 
                 } 
             );
-}
+}               
 
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
 
@@ -29,6 +31,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                                     //to make the code easier :).
 
     unsigned int current_time = 0;
+    unsigned int cpu_time_since_last_io = 0; 
     PCB running;
 
     //Initialize an empty running process
@@ -53,13 +56,20 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         for(auto &process : list_processes) {
             if(process.arrival_time == current_time) {//check if the AT = current time
                 //if so, assign memory and put the process into the ready queue
-                assign_memory(process);
+                if (assign_memory(process)) {
 
-                process.state = READY;  //Set the process state to READY
-                ready_queue.push_back(process); //Add the process to the ready queue
-                job_list.push_back(process); //Add it to the list of processes
+                    process.state = READY;  //Set the process state to READY
+                    ready_queue.push_back(process); //Add the process to the ready queue
+                    job_list.push_back(process); //Add it to the list of processes
 
-                execution_status += print_exec_status(current_time, process.PID, NEW, READY);
+                    execution_status += print_exec_status(current_time, process.PID, NEW, READY);
+                }
+                else {
+                    process.state = NEW; // process remains in NEW
+                    job_list.push_back(process); // will need to check again later. add it to job list again for nwo
+                    std::cout << "Process " << process.PID << " could not be assigned memory at time " << current_time << std::endl;
+                    
+                }
             }
         }
 
@@ -69,15 +79,12 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
         /////////////////////////////////////////////////////////////////
 
         //////////////////////////SCHEDULER//////////////////////////////
-        FCFS(ready_queue); //example of FCFS is shown here
         /////////////////////////////////////////////////////////////////
-
     }
-    
     //Close the output table
     execution_status += print_exec_footer();
-
     return std::make_tuple(execution_status);
+    
 }
 
 
@@ -115,7 +122,7 @@ int main(int argc, char** argv) {
     //With the list of processes, run the simulation
     auto [exec] = run_simulation(list_process);
 
-    write_output(exec, "execution.txt");
+    write_output(exec, "execution_EP");
 
     return 0;
 }
