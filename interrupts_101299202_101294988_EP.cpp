@@ -22,7 +22,6 @@ void priority_sort(std::vector<PCB> &ready_queue) {
 }               
 
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
-
     std::vector<PCB> ready_queue;   //The ready queue of processes
     std::vector<PCB> wait_queue;    //The wait queue of processes
     std::vector<PCB> job_list;      //A list to keep track of all the processes. This is similar
