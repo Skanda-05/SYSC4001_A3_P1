@@ -75,10 +75,51 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
 
         ///////////////////////MANAGE WAIT QUEUE/////////////////////////
         //This mainly involves keeping track of how long a process must remain in the ready queue
-
+         for (auto iter = wait_queue.begin(); iter != wait_queue.end();) {
+            iter->io_time_left--;
+            if (iter->io_time_left == 0) {
+                iter->state = READY;
+                ready_queue.push_back(*iter);
+                sync_queue(job_list, *iter);
+                
+                execution_status += print_exec_status(current_time, iter->PID, WAITING, READY);
+                iter = wait_queue.erase(iter);
+            }
+            else {
+                ++iter;
+            }
+        }
         /////////////////////////////////////////////////////////////////
 
         //////////////////////////SCHEDULER//////////////////////////////
+        //Checking for running process (very similar to RR, but no preemption)
+        // only checks for process completion and I/O
+        if (running.state == RUNNING){
+            running.remaining_time--;
+            cpu_time_since_last_io++;
+
+            //check if the process completed
+            if (running.remaining_time == 0){
+                execution_status += print_exec_status(current_time, running.PID, running.state, TERMINATED);
+                terminate_process(running, job_list);
+                idle_CPU(running);
+                cpu_time_since_last_io = 0;
+            }
+            
+            //check if the process needs to do I/O
+            else if(running.io_freq > 0 && cpu_time_since_last_io >= running.io_freq) {
+                // move to wait queue
+                running.state = WAITING;
+                running.io_time_left = running.io_duration;
+                wait_queue.push_back(running);
+                sync_queue(job_list, running);
+
+                execution_status += print_exec_status(current_time, running.PID, RUNNING, WAITING);
+                idle_CPU(running);
+                cpu_time_since_last_io = 0;
+            }
+            
+        }
         /////////////////////////////////////////////////////////////////
     }
     //Close the output table
