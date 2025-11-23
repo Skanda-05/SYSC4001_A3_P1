@@ -7,6 +7,7 @@
  * 
  */
 
+#include <map>
 #include<interrupts_101299202_101294988.hpp>
 #define TIME_QUANTUM 100
 
@@ -23,6 +24,19 @@ void priority_sort(std::vector<PCB> &ready_queue) {
 }    
 
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
+
+    // I have added tracking variables for calculating all 4 metrics to analyse later
+    //vectors to hold the calculated turnaround/wait/response times of all processes
+    //will be used to calculate averages at the end
+    std::vector<unsigned int> turnaround_times;
+    std::vector<unsigned int> waiting_times;
+    std::vector<unsigned int> response_times;
+
+    //each process's wait time, time of entering ready state, and first run time
+    //are mapped to their PID, whcih can be added to the vectors above,
+    std::map<int, unsigned int> process_wait_time;
+    std::map<int, unsigned int> enter_ready_state_time;
+    std::map<int, unsigned int> first_run_time; 
 
     std::vector<PCB> ready_queue;   //The ready queue of processes
     std::vector<PCB> wait_queue;    //The wait queue of processes
@@ -61,6 +75,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
                 if (assign_memory(process)) {
 
                     process.state = READY;  //Set the process state to READY
+                    enter_ready_state_time[process.PID] = current_time; // record the time the process entered READY
                     ready_queue.push_back(process); //Add the process to the ready queue
                     job_list.push_back(process); //Add it to the list of processes
 
@@ -81,6 +96,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             iter->io_time_left--;
             if (iter->io_time_left == 0) {
                 iter->state = READY;
+                enter_ready_state_time[iter->PID] = current_time; // another point where process enters READY, must be recorded
                 ready_queue.push_back(*iter);
                 sync_queue(job_list, *iter);
                 
@@ -103,6 +119,8 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             //check if the process completed
             if (running.remaining_time == 0){
                 execution_status += print_exec_status(current_time, running.PID, running.state, TERMINATED);
+                turnaround_times.push_back(current_time - running.arrival_time); // TT = completion time - arrival time
+                waiting_times.push_back(process_wait_time[running.PID]); // wait time is added to teh waiting vector right before ending the process
                 terminate_process(running, job_list);
                 idle_CPU(running);
                 quantum_remaining = TIME_QUANTUM;
@@ -126,6 +144,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             // check if the time queue expired (RR will preempt)
             else if (quantum_remaining == 0){
                 running.state = READY;
+                enter_ready_state_time[running.PID] = current_time; // process enters/re-enters ready state, must be recorded
                 ready_queue.insert(ready_queue.begin(), running);
                 sync_queue(job_list, running);
 
@@ -144,7 +163,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             // otherwise it retains its original start time
             // This is to prevent overwriting the start time when a process is preempted and rescheduled
             // run_process() function sets start time to current time unconditionally, meaning every time a process is scheduled
-            // its start time would be updated (even if it is just being rescheduled after preemption), which is incorrect.
+            // its start time would be updated (even if it is just being rescheduled after preemption), which is incorrect (at least that's what I want)
             if (running.start_time == -1) {
                 running.start_time = current_time;
             }
@@ -154,12 +173,58 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             quantum_remaining = TIME_QUANTUM;
             sync_queue(job_list, running);
             execution_status += print_exec_status(current_time, running.PID, old_state, running.state);
+
+            //if this is the first time the process is running, record the response time
+            if (first_run_time.find(running.PID) == first_run_time.end()) {
+                first_run_time[running.PID] = running.start_time;
+                response_times.push_back(current_time - running.arrival_time); // RT = first run time - arrival time
+            }
+            
+            //calculate the waiting time up to this point
+            //checks if the process has entered the ready state before. if so, calculate the wait time
+            if(enter_ready_state_time.find(running.PID) != enter_ready_state_time.end()) {
+                //check if the process has a wait time recorded already. if not, initialize a new wait counter to 0
+                if (process_wait_time.find(running.PID) == process_wait_time.end()) {
+                    process_wait_time[running.PID] = 0;
+                }
+                process_wait_time[running.PID] += (current_time - enter_ready_state_time[running.PID]);
+            }
         }
+    
         current_time++;
     }
     
     //Close the output table
     execution_status += print_exec_footer();
+
+    //time to calculate all the averages yay
+    float avg_turnaround_time = 0;
+    float avg_waiting_time = 0;
+    float avg_response_time = 0;
+    float throughput = 0;
+
+    for (auto tt : turnaround_times) {
+        avg_turnaround_time += tt;
+    }
+    avg_turnaround_time = avg_turnaround_time / turnaround_times.size();
+
+    for (auto wt : waiting_times) {
+        avg_waiting_time += wt;
+    }
+    avg_waiting_time = avg_waiting_time / waiting_times.size();
+
+    for (auto rt : response_times) {
+        avg_response_time += rt;
+    }
+    avg_response_time = avg_response_time / response_times.size();
+
+    throughput = (float) turnaround_times.size() / (float) current_time; // total number of processes / total time taken. could also use job_list.size() i think
+
+    std::cout << "\n=== METRICS ===" << std::endl;
+    std::cout << "Throughput: " << throughput << " processes/ms" << std::endl;
+    std::cout << "Avg Turnaround Time: " << avg_turnaround_time << " ms" << std::endl;
+    std::cout << "Avg Wait Time: " << avg_waiting_time << " ms" << std::endl;
+    std::cout << "Avg Response Time: " << avg_response_time << " ms" << std::endl;
 
     return std::make_tuple(execution_status);
 }
