@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
     //With the list of processes, run the simulation
     auto [exec] = run_simulation(list_process);
 
-    write_output(exec, "execution_EP_RR.txt");
+    write_output(exec, "output_files/EP_RR/execution_EP_RR.txt");
 
     return 0;
 }
