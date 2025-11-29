@@ -25,8 +25,8 @@ void FCFS(std::vector<PCB> &ready_queue) {
 std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std::vector<PCB> list_processes) {
 
     // I have added tracking variables for calculating all 4 metrics to analyse later
-
-    //vectors to hold the calculated turnaround/wait/response times of all processes
+    
+    //these are vectors to hold the calculated turnaround/wait/response times of all processes
     //will be used to calculate averages at the end
     std::vector<unsigned int> turnaround_times;
     std::vector<unsigned int> waiting_times;
@@ -188,7 +188,7 @@ std::tuple<std::string /* add std::string for bonus mark */ > run_simulation(std
             //calculate the waiting time up to this point
             //checks if the process has entered the ready state before. if so, calculate the wait time  
             if(enter_ready_state_time.find(running.PID) != enter_ready_state_time.end()) {
-                //check if the process has a wait time recorded already. if not, initialize a new wait counter to 0
+                //initializes a wait counter to 0 only if this is the first time process is entering WAIT state
                 if (process_wait_time.find(running.PID) == process_wait_time.end()) {
                     process_wait_time[running.PID] = 0;
                 }
